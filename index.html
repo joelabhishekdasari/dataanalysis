@@ -1,1 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BorrowBox Analytics Dashboard v4</title>
+<style>
+:root{
+  --bg:#0f1117;--panel:#1a1d27;--panel2:#1e2235;--border:#2a2f45;
+  --blue:#4c9be8;--teal:#2dd4bf;--orange:#f97316;--red:#ef4444;
+  --green:#22c55e;--purple:#a78bfa;--yellow:#fbbf24;--pink:#f472b6;
+  --text:#e2e8f0;--muted:#94a3b8;--dim:#64748b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5}
 
+/* HEADER */
+header{background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);padding:16px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.header-left h1{font-size:20px;font-weight:800;color:#fff}
+.header-left p{font-size:11px;color:var(--muted);margin-top:2px}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{background:rgba(76,155,232,.15);border:1px solid var(--blue);color:var(--blue);padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-green{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.4);color:var(--green)}
+.badge-orange{background:rgba(249,115,22,.12);border-color:rgba(249,115,22,.4);color:var(--orange)}
+
+/* TABS */
+nav{display:flex;background:var(--panel);border-bottom:2px solid var(--border);padding:0 20px;overflow-x:auto;gap:2px}
+.tab{padding:13px 18px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;text-transform:uppercase;letter-spacing:.3px}
+.tab:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab.tab-new.active{color:var(--teal);border-bottom-color:var(--teal)}
+
+/* SECTIONS */
+.section{display:none;padding:24px 28px;animation:fadeIn .25s ease}
+.section.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* STORY HEADER */
+.story-header{background:linear-gradient(135deg,rgba(76,155,232,.08),rgba(45,212,191,.05));border:1px solid rgba(76,155,232,.2);border-radius:12px;padding:18px 22px;margin-bottom:22px}
+.story-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--blue);margin-bottom:6px}
+.story-header h2{font-size:17px;font-weight:700;color:#fff;margin-bottom:6px}
+.story-header p{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* KPI SECTION LABEL */
+.kpi-section-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+.kpi-row-5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.blue::before{background:var(--blue)} .kpi.teal::before{background:var(--teal)}
+.kpi.red::before{background:var(--red)} .kpi.orange::before{background:var(--orange)}
+.kpi.green::before{background:var(--green)} .kpi.purple::before{background:var(--purple)}
+.kpi.yellow::before{background:var(--yellow)}
+.kpi-acronym{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:2px}
+.kpi-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px}
+.kpi-value{font-size:26px;font-weight:800;margin:4px 0 2px;line-height:1}
+.kpi-sub{font-size:10px;color:var(--dim)}
+.kpi-delta{font-size:10px;font-weight:700;margin-top:4px}
+.delta-good{color:var(--green)} .delta-bad{color:var(--red)}
+.kpi-formula{font-size:9px;color:var(--dim);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);font-style:italic}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-1{margin-bottom:16px}
+.span-2{grid-column:span 2}
+@media(max-width:900px){.grid-2,.grid-3,.kpi-row-5{grid-template-columns:1fr}.span-2{grid-column:span 1}}
+
+/* CARD */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px}
+.card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+
+/* INSIGHT */
+.insight{border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;line-height:1.6;border-left:3px solid}
+.insight.blue{background:rgba(76,155,232,.08);border-color:var(--blue);color:#a8ccf0}
+.insight.orange{background:rgba(249,115,22,.08);border-color:var(--orange);color:#fbc49a}
+.insight.red{background:rgba(239,68,68,.08);border-color:var(--red);color:#f8a9a9}
+.insight.green{background:rgba(34,197,94,.08);border-color:var(--green);color:#86e8a8}
+.insight.teal{background:rgba(45,212,191,.08);border-color:var(--teal);color:#82dfd8}
+.insight.purple{background:rgba(167,139,250,.08);border-color:var(--purple);color:#c4b2fc}
+.insight.yellow{background:rgba(251,191,36,.08);border-color:var(--yellow);color:#fde08a}
+.insight-icon{font-weight:800;margin-right:6px}
+
+/* BEFORE/AFTER */
+.change-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,.02);border-radius:8px;margin-bottom:8px;border:1px solid var(--border)}
+.change-label{font-size:12px;color:var(--muted)}
+.change-acronym{font-size:10px;font-weight:800;color:var(--dim);margin-left:6px;letter-spacing:.8px}
+.change-values{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700}
+.val-before{color:var(--red)} .val-after{color:var(--green)} .arrow{color:var(--dim);font-size:16px}
+.pct-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,.15);color:var(--green)}
+
+.note{font-size:10px;color:var(--dim);margin-top:8px;font-style:italic}
+canvas{display:block;width:100%!important}
+
+/* KPI reference legend */
+.kpi-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.kpi-pill{background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;color:var(--muted)}
+.kpi-pill span{font-weight:400;color:var(--dim)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>BorrowBox — Operational Analytics Dashboard</h1>
+    <p>City-Wide Shared Equipment Lending System &nbsp;|&nbsp; Group 3 &nbsp;|&nbsp; Saint Louis University &nbsp;|&nbsp; Dr. Tatiana Cardona</p>
+  </div>
+  <div class="header-right">
+    <span class="badge">2,100 Transactions</span>
+    <span class="badge badge-orange">5 Hubs</span>
+    <span class="badge badge-green">5 KPIs Tracked</span>
+  </div>
+</header>
+
+<nav>
+  <div class="tab active" onclick="show('overview',this)">1. Overview</div>
+  <div class="tab" onclick="show('hubs',this)">2. Hub Performance</div>
+  <div class="tab" onclick="show('categories',this)">3. Equipment Categories</div>
+  <div class="tab" onclick="show('disruptions',this)">4. Disruption Analysis</div>
+  <div class="tab" onclick="show('reminders',this)">5. Reminder System</div>
+  <div class="tab tab-new" onclick="show('beforeafter',this)">6. Before vs After Solution</div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 1 — OVERVIEW
+═══════════════════════════════════════════════════════════ -->
+<section id="overview" class="section active">
+  <div class="story-header">
+    <div class="story-tag">Chapter 1 — The Problem</div>
+    <h2>How serious is the late-return problem across BorrowBox?</h2>
+    <p>We start by establishing the scale of the problem across all five Key Performance Indicators. Before the solution was implemented, 23% of all equipment loans were returned late, cascading into disruptions, delays, and staff overrides. The five KPIs below are the measurable targets this project was designed to improve.</p>
+  </div>
+
+  <!-- KPI REFERENCE PILLS -->
+  <div class="kpi-legend">
+    <div class="kpi-pill">LRR <span>Late Return Rate</span></div>
+    <div class="kpi-pill">RDR <span>Reservation Disruption Rate</span></div>
+    <div class="kpi-pill">ARD <span>Average Return Delay</span></div>
+    <div class="kpi-pill">ARDR <span>At-Risk Return Detection Rate</span></div>
+    <div class="kpi-pill">SOR <span>Staff Override Rate</span></div>
+  </div>
+
+  <div class="kpi-section-label">ALL 5 PROJECT KPIs — BASELINE (BEFORE PROTOTYPE)</div>
+  <div class="kpi-row-5">
+    <div class="kpi red">
+      <div class="kpi-acronym">KPI 1 — LRR</div>
+      <div class="kpi-label">Late Return Rate</div>
+      <div class="kpi-value" style="color:var(--red)">23.0%</div>
+      <div class="kpi-sub">483 of 2,100 transactions</div>
+      <div class="kpi-formula">LRR = (&Sigma; is_late) / T &times; 100</div>
+    </div>
+    <div class="kpi orange">
+      <div class="kpi-acronym">KPI 2 — RDR</div>
+      <div class="kpi-label">Reservation Disruption Rate</div>
+      <div class="kpi-value" style="color:var(--orange)">63.7%</div>
+      <div class="kpi-sub">308 of 483 late returns caused disruptions</div>
+      <div class="kpi-formula">RDR = (&Sigma; disruption) / (&Sigma; is_late) &times; 100</div>
+    </div>
+    <div class="kpi yellow">
+      <div class="kpi-acronym">KPI 3 — ARD</div>
+      <div class="kpi-label">Average Return Delay</div>
+      <div class="kpi-value" style="color:var(--yellow)">51.5h</div>
+      <div class="kpi-sub">Average hours overdue (late only)</div>
+      <div class="kpi-formula">ARD = &Sigma; delay_hours / &Sigma; is_late</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-acronym">KPI 4 — ARDR</div>
+      <div class="kpi-label">At-Risk Detection Rate</div>
+      <div class="kpi-value" style="color:var(--purple)">0%</div>
+      <div class="kpi-sub">No monitoring system existed</div>
+      <div class="kpi-formula">ARDR = (&Sigma; risk_flag &cap; is_late) / &Sigma; is_late &times; 100</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-acronym">KPI 5 — SOR</div>
+      <div class="kpi-label">Staff Override Rate</div>
+      <div class="kpi-value" style="color:var(--blue)">8.9%</div>
+      <div class="kpi-sub">187 manual override events</div>
+      <div class="kpi-formula">SOR = (&Sigma; staff_override) / T &times; 100</div>
+    </div>
+  </div>
+
+  <div class="insight red"><span class="insight-icon">KPI 1 — LRR:</span> Nearly 1 in 4 equipment loans is returned late. This single metric drives all other KPIs — every disruption, every delay, and every staff override originates from a late return.</div>
+  <div class="insight orange"><span class="insight-icon">KPI 2 — RDR:</span> 63.7% of late returns cascade into a reservation disruption, meaning another user who reserved the item cannot access it on time.</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">KPI 1 (LRR) — Late Return Rate by Hub</div>
+      <canvas id="c-overview-hub" height="220"></canvas>
+      <div class="note">Horizontal axis: Hub ID | Vertical axis: LRR (%) | Dashed = system average 23.0%</div>
+    </div>
+    <div class="card">
+      <div class="card-title">KPI 1 (LRR) — Late Return Rate by Equipment Category</div>
+      <canvas id="c-overview-cat" height="220"></canvas>
+      <div class="note">Horizontal axis: Equipment category | Vertical axis: LRR (%)</div>
+    </div>
+  </div>
+
+  <div class="insight purple"><span class="insight-icon">KPI 4 — ARDR:</span> Before the prototype, ARDR = 0%. No system existed to flag at-risk returns before the due date. The prototype's At-Risk Monitor addresses this directly, raising ARDR from 0% to 64.9% — meaning 155 of 239 late returns were caught and flagged before the due date passed.</div>
+  <div class="insight blue"><span class="insight-icon">KPI 5 — SOR:</span> 187 transactions required manual staff intervention (8.9% of all transactions). Every override means staff time spent resolving a conflict that could have been prevented.</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 2 — HUBS
+═══════════════════════════════════════════════════════════ -->
+<section id="hubs" class="section">
+  <div class="story-header">
+    <div class="story-tag">Chapter 2 — Where Is It Happening?</div>
+    <h2>Which hubs are driving LRR, RDR, ARD, and SOR upward?</h2>
+    <p>KPIs 1, 2, 3, and 5 are all disaggregated by hub here. If one hub appears at the top of every chart, it becomes the clear priority for targeted intervention. HUB5 ranks worst across all four hub-level KPIs.</p>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi red">
+      <div class="kpi-acronym">KPI 1 — LRR</div>
+      <div class="kpi-label">Worst Hub Late Rate</div>
+      <div class="kpi-value" style="color:var(--red);font-size:22px">HUB5</div>
+      <div class="kpi-sub">LRR = 28.4%</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-acronym">KPI 1 — LRR</div>
+      <div class="kpi-label">Best Hub Late Rate</div>
+      <div class="kpi-value" style="color:var(--green);font-size:22px">HUB2</div>
+      <div class="kpi-sub">LRR = 17.1%</div>
+    </div>
+    <div class="kpi orange">
+      <div class="kpi-acronym">KPI 3 — ARD</div>
+      <div class="kpi-label">Highest Avg Delay</div>
+      <div class="kpi-value" style="color:var(--orange);font-size:22px">HUB5</div>
+      <div class="kpi-sub">ARD = 62.3 hours</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-acronym">KPI 2 — RDR</div>
+      <div class="kpi-label">Most Disruptions</div>
+      <div class="kpi-value" style="color:var(--purple);font-size:22px">HUB5</div>
+      <div class="kpi-sub">110 disruption events</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-acronym">KPI 5 — SOR</div>
+      <div class="kpi-label">Most Staff Overrides</div>
+      <div class="kpi-value" style="color:var(--blue);font-size:22px">HUB5</div>
+      <div class="kpi-sub">Highest override count</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">KPI 1 (LRR) — Late Return Rate (%) per Hub</div>
+      <canvas id="c-hub-rate" height="230"></canvas>
+      <div class="note">Horizontal axis: Hub ID | Vertical axis: LRR (%) | Dashed = system average 23.0%</div>
+    </div>
+    <div class="card">
+      <div class="card-title">KPI 3 (ARD) — Average Hours Overdue per Hub</div>
+      <canvas id="c-hub-days" height="230"></canvas>
+      <div class="note">Horizontal axis: Hub ID | Vertical axis: ARD (average delay hours, late transactions only)</div>
+    </div>
+  </div>
+
+  <div class="insight red"><span class="insight-icon">KPI 1 + KPI 3:</span> HUB5 ranks last on both LRR (28.4%) and ARD (62.3 hours). The gap between HUB5 and HUB2 is 11.3 percentage points — the same equipment lending policy produces very different outcomes by location.</div>
+
+  <div class="grid-1">
+    <div class="card">
+      <div class="card-title">KPI 2 (RDR) + KPI 5 (SOR) — Disruptions and Staff Overrides per Hub</div>
+      <canvas id="c-hub-dis" height="200"></canvas>
+      <div class="note">Horizontal axis: Hub ID | Vertical axis: Count of events | Blue = Disruptions (KPI 2) | Orange = Staff Overrides (KPI 5)</div>
+    </div>
+  </div>
+
+  <div class="insight orange"><span class="insight-icon">KPI 2 + KPI 5:</span> HUB5 generates the most disruption events (KPI 2) and the most staff override events (KPI 5). These two KPIs together confirm HUB5 needs targeted operational intervention, not a system-wide policy change.</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 3 — CATEGORIES
+═══════════════════════════════════════════════════════════ -->
+<section id="categories" class="section">
+  <div class="story-header">
+    <div class="story-tag">Chapter 3 — What Is Being Returned Late?</div>
+    <h2>Which equipment categories drive LRR and ARD highest?</h2>
+    <p>KPIs 1 and 3 are disaggregated by equipment category here. Different item types have fundamentally different usage patterns. Camping gear is taken on multi-day trips — this produces a very different KPI profile than tools or electronics.</p>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi red">
+      <div class="kpi-acronym">KPI 1 — LRR</div>
+      <div class="kpi-label">Highest LRR Category</div>
+      <div class="kpi-value" style="color:var(--red);font-size:20px">Camping</div>
+      <div class="kpi-sub">LRR = 31.2%</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-acronym">KPI 1 — LRR</div>
+      <div class="kpi-label">Lowest LRR Category</div>
+      <div class="kpi-value" style="color:var(--green);font-size:20px">Electronics</div>
+      <div class="kpi-sub">LRR = 15.8%</div>
+    </div>
+    <div class="kpi orange">
+      <div class="kpi-acronym">KPI 3 — ARD</div>
+      <div class="kpi-label">Longest Avg Delay</div>
+      <div class="kpi-value" style="color:var(--orange);font-size:20px">Camping</div>
+      <div class="kpi-sub">ARD = 68.4 hours when late</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-acronym">KPI 4 — ARDR</div>
+      <div class="kpi-label">Highest Risk Score</div>
+      <div class="kpi-value" style="color:var(--purple);font-size:20px">Camping</div>
+      <div class="kpi-sub">W&#x1D04; = 4 (highest weight)</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">KPI 1 (LRR) — Late Return Rate (%) by Equipment Category</div>
+      <canvas id="c-cat-rate" height="230"></canvas>
+      <div class="note">Horizontal axis: Equipment category | Vertical axis: LRR (%)</div>
+    </div>
+    <div class="card">
+      <div class="card-title">KPI 3 (ARD) — Average Hours Overdue by Category</div>
+      <canvas id="c-cat-delay" height="230"></canvas>
+      <div class="note">Horizontal axis: Equipment category | Vertical axis: ARD (hours, late transactions only)</div>
+    </div>
+  </div>
+
+  <div class="insight red"><span class="insight-icon">KPI 1 + KPI 3:</span> Camping equipment has the highest LRR (31.2%) AND the longest ARD (68.4 hours). This corrected an early assumption that Tools would rank highest. Camping gear receives the highest risk weight (W&#x1D04; = 4) in the ARDR formula, making it the first category flagged by the At-Risk Monitor.</div>
+
+  <div class="grid-1">
+    <div class="card">
+      <div class="card-title">KPI 1 (LRR) — On-Time vs Late Return Distribution by Category</div>
+      <canvas id="c-cat-dist" height="200"></canvas>
+      <div class="note">Horizontal axis: Equipment category | Vertical axis: Number of transactions | Blue = On-time | Red = Late</div>
+    </div>
+  </div>
+
+  <div class="insight yellow"><span class="insight-icon">KPI 4 — ARDR:</span> Because Camping has the highest LRR and ARD, the ARDR formula assigns it a category weight of 4 — the maximum. This means any Camping item approaching its due date at HUB5 with fewer than 2 days remaining from a first-time borrower will automatically receive the highest risk score and be flagged first by the At-Risk Monitor.</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 4 — DISRUPTIONS
+═══════════════════════════════════════════════════════════ -->
+<section id="disruptions" class="section">
+  <div class="story-header">
+    <div class="story-tag">Chapter 4 — What Is the Real Cost?</div>
+    <h2>KPI 2 (RDR) in depth — when late returns hurt the next user</h2>
+    <p>The Reservation Disruption Rate (RDR = &Sigma; disruption / &Sigma; is_late &times; 100) measures how frequently a late return causes a service delivery failure for another user. A disruption means a borrower arrived at a hub to pick up their reserved item and found it not yet returned. This chapter quantifies that downstream cost.</p>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi red">
+      <div class="kpi-acronym">KPI 2 — RDR</div>
+      <div class="kpi-label">Total Disruption Events</div>
+      <div class="kpi-value" style="color:var(--red)">308</div>
+      <div class="kpi-sub">RDR = 63.7% of all late returns</div>
+    </div>
+    <div class="kpi orange">
+      <div class="kpi-acronym">KPI 2 — RDR</div>
+      <div class="kpi-label">Worst Disruption Hub</div>
+      <div class="kpi-value" style="color:var(--orange);font-size:22px">HUB5</div>
+      <div class="kpi-sub">110 disruption events at HUB5</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-acronym">KPI 2 — RDR</div>
+      <div class="kpi-label">Peak Disruption Season</div>
+      <div class="kpi-value" style="color:var(--purple);font-size:20px">Summer</div>
+      <div class="kpi-sub">Aligns with camping demand peak</div>
+    </div>
+    <div class="kpi yellow">
+      <div class="kpi-acronym">KPI 2 — RDR</div>
+      <div class="kpi-label">Severe Disruptions</div>
+      <div class="kpi-value" style="color:var(--yellow)">22%</div>
+      <div class="kpi-sub">User could not be served at all</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">KPI 2 (RDR) — Disruption Count per Hub</div>
+      <canvas id="c-dis-hub" height="230"></canvas>
+      <div class="note">Horizontal axis: Hub ID | Vertical axis: Number of disruption events contributing to RDR</div>
+    </div>
+    <div class="card">
+      <div class="card-title">KPI 2 (RDR) — Disruption Severity Distribution</div>
+      <canvas id="c-dis-sev" height="230"></canvas>
+      <div class="note">Mild = short delay resolved | Moderate = rescheduled | Severe = user unserved</div>
+    </div>
+  </div>
+
+  <div class="insight red"><span class="insight-icon">KPI 2 — RDR:</span> 308 disruption events means 308 users who arrived expecting to pick up reserved equipment and could not. This is not an operational inconvenience — it is a service delivery failure that directly damages user trust.</div>
+
+  <div class="grid-1">
+    <div class="card">
+      <div class="card-title">KPI 2 (RDR) — Disruption Events by Month — Seasonal Pattern</div>
+      <canvas id="c-dis-month" height="200"></canvas>
+      <div class="note">Horizontal axis: Month | Vertical axis: Number of disruption events per month contributing to RDR</div>
+    </div>
+  </div>
+
+  <div class="insight purple"><span class="insight-icon">KPI 2 + KPI 4:</span> Disruptions peak in summer, directly aligning with peak camping equipment demand. The ARDR formula accounts for this seasonality — the (1/R) component increases the risk score as days remaining decrease, meaning summer items are flagged earlier when reservation density is highest.</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 5 — REMINDERS / KPI 4 + KPI 5
+═══════════════════════════════════════════════════════════ -->
+<section id="reminders" class="section">
+  <div class="story-header">
+    <div class="story-tag">Chapter 5 — Is the Current Intervention Working?</div>
+    <h2>KPI 4 (ARDR) and KPI 5 (SOR) — Why reminders fail and what replaced them</h2>
+    <p>Before the prototype, the only intervention was an automated reminder sent before the due date. The data shows this had no measurable effect on LRR (KPI 1). ARDR (KPI 4) was 0% — nothing was being flagged proactively. SOR (KPI 5) was high at 8.9% because staff were constantly reacting manually. This tab shows the evidence behind replacing reminders with the At-Risk Monitor.</p>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi blue">
+      <div class="kpi-acronym">KPI 1 — LRR</div>
+      <div class="kpi-label">LRR With Reminder</div>
+      <div class="kpi-value" style="color:var(--blue)">22.7%</div>
+      <div class="kpi-sub">Users who received a reminder</div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-acronym">KPI 1 — LRR</div>
+      <div class="kpi-label">LRR Without Reminder</div>
+      <div class="kpi-value" style="color:var(--red)">23.4%</div>
+      <div class="kpi-sub">Users who received no reminder</div>
+    </div>
+    <div class="kpi orange">
+      <div class="kpi-label">LRR Difference</div>
+      <div class="kpi-value" style="color:var(--orange)">0.7%</div>
+      <div class="kpi-sub">Not statistically significant</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-acronym">KPI 4 — ARDR</div>
+      <div class="kpi-label">At-Risk Detection Rate</div>
+      <div class="kpi-value" style="color:var(--purple)">0%</div>
+      <div class="kpi-sub">Before prototype &mdash; After prototype: 64.9%</div>
+      <div class="kpi-formula">ARDR = (&Sigma; risk_flag &cap; is_late) / &Sigma; is_late &times; 100</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-acronym">KPI 5 — SOR</div>
+      <div class="kpi-label">Staff Override Rate</div>
+      <div class="kpi-value" style="color:var(--blue)">8.9%</div>
+      <div class="kpi-sub">187 manual overrides — staff reacting, not preventing</div>
+      <div class="kpi-formula">SOR = (&Sigma; staff_override) / T &times; 100</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">KPI 1 (LRR) — With Reminder vs Without Reminder</div>
+      <canvas id="c-rem-main" height="240"></canvas>
+      <div class="note">Horizontal axis: Reminder status | Vertical axis: LRR (%) | 0.7% difference is not meaningful</div>
+    </div>
+    <div class="card">
+      <div class="card-title">KPI 1 (LRR) — Reminder Effectiveness by Equipment Category</div>
+      <canvas id="c-rem-cat" height="240"></canvas>
+      <div class="note">Horizontal axis: Equipment category | Vertical axis: LRR (%) | Blue = reminder sent | Red = no reminder</div>
+    </div>
+  </div>
+
+  <div class="insight red"><span class="insight-icon">KPI 1 (LRR):</span> 22.7% vs 23.4% — a 0.7 percentage point difference. Reminders are not reducing LRR. The current reminder system cannot be justified as an effective intervention based on the available data.</div>
+
+  <div class="grid-1">
+    <div class="card">
+      <div class="card-title">KPI 1 (LRR) — Reminder Effectiveness by Hub</div>
+      <canvas id="c-rem-hub" height="200"></canvas>
+      <div class="note">Horizontal axis: Hub ID | Vertical axis: LRR (%) | Blue = reminder sent | Red = no reminder sent</div>
+    </div>
+  </div>
+
+  <div class="insight teal"><span class="insight-icon">KPI 4 (ARDR) + KPI 5 (SOR):</span> Because ARDR = 0% and reminders are ineffective, staff are left reacting manually (SOR = 8.9%). The prototype replaces this with the At-Risk Monitor — a risk-scoring system that uses Category Weight + Hub Weight + Days Remaining + User Segment to flag items proactively before the due date passes, raising ARDR from 0% to 64.9% and lowering SOR from 8.9% to 2.9%.</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 6 — BEFORE vs AFTER
+═══════════════════════════════════════════════════════════ -->
+<section id="beforeafter" class="section">
+  <div class="story-header" style="border-color:rgba(45,212,191,.3);background:linear-gradient(135deg,rgba(45,212,191,.07),rgba(34,197,94,.05))">
+    <div class="story-tag" style="color:var(--teal)">Chapter 6 — The Solution Impact</div>
+    <h2>All 5 KPIs — Before vs After the BorrowBox Prototype</h2>
+    <p>The prototype introduced proactive at-risk monitoring (KPI 4 — ARDR), a hub alert dashboard, a disruption log, and a risk-scoring system. The charts below show measurable improvement across all five KPIs: LRR, RDR, ARD, ARDR, and SOR.</p>
+  </div>
+
+  <div class="kpi-section-label">ALL 5 KPIs — BEFORE vs AFTER COMPARISON</div>
+  <div class="kpi-row-5">
+    <div class="kpi red">
+      <div class="kpi-acronym">KPI 1 — LRR</div>
+      <div class="kpi-label">Late Return Rate</div>
+      <div class="kpi-value" style="color:var(--red)">23.0%</div>
+      <div class="kpi-sub">Before prototype</div>
+      <div class="kpi-delta delta-good">After: 11.4% &darr; 50.4%</div>
+      <div class="kpi-formula">LRR = (&Sigma; is_late) / T &times; 100</div>
+    </div>
+    <div class="kpi orange">
+      <div class="kpi-acronym">KPI 2 — RDR</div>
+      <div class="kpi-label">Disruption Rate</div>
+      <div class="kpi-value" style="color:var(--orange)">63.7%</div>
+      <div class="kpi-sub">Before prototype</div>
+      <div class="kpi-delta delta-good">After: 28.1% &darr; 55.9%</div>
+      <div class="kpi-formula">RDR = (&Sigma; disruption) / (&Sigma; is_late) &times; 100</div>
+    </div>
+    <div class="kpi yellow">
+      <div class="kpi-acronym">KPI 3 — ARD</div>
+      <div class="kpi-label">Avg Return Delay</div>
+      <div class="kpi-value" style="color:var(--yellow)">51.5h</div>
+      <div class="kpi-sub">Before prototype</div>
+      <div class="kpi-delta delta-good">After: 18.2h &darr; 64.7%</div>
+      <div class="kpi-formula">ARD = &Sigma; delay_hours / &Sigma; is_late</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-acronym">KPI 4 — ARDR</div>
+      <div class="kpi-label">At-Risk Detection</div>
+      <div class="kpi-value" style="color:var(--purple)">0%</div>
+      <div class="kpi-sub">Before prototype</div>
+      <div class="kpi-delta delta-good">After: 64.9% (+64.9pp)</div>
+      <div class="kpi-formula">ARDR = (&Sigma; risk_flag &cap; is_late) / &Sigma; is_late &times; 100</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-acronym">KPI 5 — SOR</div>
+      <div class="kpi-label">Staff Override Rate</div>
+      <div class="kpi-value" style="color:var(--blue)">8.9%</div>
+      <div class="kpi-sub">Before prototype (187 events)</div>
+      <div class="kpi-delta delta-good">After: 2.9% &darr; 67.4%</div>
+      <div class="kpi-formula">SOR = (&Sigma; staff_override) / T &times; 100</div>
+    </div>
+  </div>
+
+  <div class="insight green"><span class="insight-icon">ALL 5 KPIs IMPROVED:</span> LRR down 50%, RDR down 56%, ARD down 65%, ARDR rose from 0% to 64.9% — 155 of 239 late returns were flagged proactively before going late. 312 total flags were raised (including 157 false positives that returned on time), SOR down 67%. Every measurable target was achieved or exceeded.</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">KPI 1 (LRR) — Late Return Rate by Hub Before vs After</div>
+      <canvas id="c-ba-hub-rate" height="260"></canvas>
+      <div class="note">Horizontal axis: Hub ID | Vertical axis: LRR (%) | Red = Before | Green = After</div>
+    </div>
+    <div class="card">
+      <div class="card-title">KPI 2 (RDR) — Disruption Count by Hub Before vs After</div>
+      <canvas id="c-ba-hub-dis" height="260"></canvas>
+      <div class="note">Horizontal axis: Hub ID | Vertical axis: Disruption count contributing to RDR | Red = Before | Green = After</div>
+    </div>
+  </div>
+
+  <div class="insight teal"><span class="insight-icon">KPI 1 + KPI 2:</span> HUB5 shows the largest absolute improvement — LRR from 28.4% to 12.1%, disruptions from 110 to 48. The hub-level alert dashboard gave HUB5 staff visibility they previously lacked.</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">KPI 1 (LRR) + KPI 3 (ARD) — Category Performance Before vs After</div>
+      <canvas id="c-ba-cat-rate" height="260"></canvas>
+      <div class="note">Horizontal axis: Equipment category | Vertical axis: LRR (%) | Red = Before | Green = After</div>
+    </div>
+    <div class="card">
+      <div class="card-title">KPI 3 (ARD) — Average Delay Hours by Category Before vs After</div>
+      <canvas id="c-ba-cat-delay" height="260"></canvas>
+      <div class="note">Horizontal axis: Equipment category | Vertical axis: ARD (hours) | Red = Before | Green = After</div>
+    </div>
+  </div>
+
+  <div class="insight yellow"><span class="insight-icon">KPI 3 — ARD:</span> Camping equipment shows the most dramatic ARD improvement: from 68.4 hours to 22.1 hours. The ARDR risk score assigns Camping the highest category weight (W&#x1D04; = 4), so camping items are flagged earliest and staff contact borrowers with the most lead time.</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">All 5 KPIs — Normalised Score Before vs After</div>
+      <canvas id="c-ba-overall" height="260"></canvas>
+      <div class="note">Horizontal axis: KPI | Vertical axis: Normalised value for comparison | Red = Before | Green = After | All values scaled to percentage base</div>
+    </div>
+    <div class="card">
+      <div class="card-title">KPI 1 (LRR) — Monthly Trend Before and After Prototype Go-Live (Month 7)</div>
+      <canvas id="c-ba-trend" height="260"></canvas>
+      <div class="note">Horizontal axis: Month | Vertical axis: LRR (%) | Prototype live from Month 7 — continuous decline observed</div>
+    </div>
+  </div>
+
+  <div class="insight purple"><span class="insight-icon">KPI 4 — ARDR:</span> After Month 7, LRR began declining immediately as the ARDR monitoring system flagged items and staff intervened proactively. By Month 12, LRR stabilised at 11.4% — a new, lower equilibrium driven by the At-Risk Monitor replacing passive reminders.</div>
+
+  <!-- FULL KPI CHANGE TABLE -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-title" style="margin-bottom:16px">Complete KPI Summary — All 5 KPIs Before vs After the BorrowBox Prototype</div>
+
+    <div class="change-row">
+      <span><span class="change-label">Late Return Rate</span><span class="change-acronym">KPI 1 — LRR = (&Sigma; is_late) / T &times; 100</span></span>
+      <div class="change-values"><span class="val-before">23.0%</span><span class="arrow">&#8594;</span><span class="val-after">11.4%</span><span class="pct-badge">-50.4%</span></div>
+    </div>
+    <div class="change-row">
+      <span><span class="change-label">Reservation Disruption Rate</span><span class="change-acronym">KPI 2 — RDR = (&Sigma; disruption) / (&Sigma; is_late) &times; 100</span></span>
+      <div class="change-values"><span class="val-before">63.7%</span><span class="arrow">&#8594;</span><span class="val-after">28.1%</span><span class="pct-badge">-55.9%</span></div>
+    </div>
+    <div class="change-row">
+      <span><span class="change-label">Average Return Delay</span><span class="change-acronym">KPI 3 — ARD = &Sigma; delay_hours / &Sigma; is_late</span></span>
+      <div class="change-values"><span class="val-before">51.5 hrs</span><span class="arrow">&#8594;</span><span class="val-after">18.2 hrs</span><span class="pct-badge">-64.7%</span></div>
+    </div>
+    <div class="change-row">
+      <span><span class="change-label">At-Risk Return Detection Rate</span><span class="change-acronym">KPI 4 — ARDR = (&Sigma; risk_flag &cap; is_late) / &Sigma; is_late &times; 100</span></span>
+      <div class="change-values"><span class="val-before">0% (no system)</span><span class="arrow">&#8594;</span><span class="val-after">64.9%</span><span class="pct-badge" style="background:rgba(167,139,250,.15);color:var(--purple)">+64.9pp</span></div>
+    </div>
+    <div class="change-row">
+      <span><span class="change-label">Staff Override Rate</span><span class="change-acronym">KPI 5 — SOR = (&Sigma; staff_override) / T &times; 100</span></span>
+      <div class="change-values"><span class="val-before">8.9% (187)</span><span class="arrow">&#8594;</span><span class="val-after">2.9% (61)</span><span class="pct-badge">-67.4%</span></div>
+    </div>
+    <div class="change-row">
+      <span><span class="change-label">HUB5 LRR (worst hub)</span><span class="change-acronym">KPI 1 disaggregated by hub</span></span>
+      <div class="change-values"><span class="val-before">28.4%</span><span class="arrow">&#8594;</span><span class="val-after">12.1%</span><span class="pct-badge">-57.4%</span></div>
+    </div>
+    <div class="change-row">
+      <span><span class="change-label">Camping LRR (highest risk category)</span><span class="change-acronym">KPI 1 disaggregated by category</span></span>
+      <div class="change-values"><span class="val-before">31.2%</span><span class="arrow">&#8594;</span><span class="val-after">13.8%</span><span class="pct-badge">-55.8%</span></div>
+    </div>
+  </div>
+
+  <div class="insight green" style="margin-top:16px"><span class="insight-icon">CONCLUSION:</span> All five KPIs show measurable improvement. The prototype directly addressed each: LRR and RDR fell because the At-Risk Monitor (ARDR) caught problems early. ARD fell because Camping-specific policy reduced default lending periods. SOR fell because staff stopped reacting manually to problems the system now handles proactively.</div>
+</section>
+
+<script>
+const C = {
+  blue:'#4c9be8',teal:'#2dd4bf',orange:'#f97316',red:'#ef4444',
+  green:'#22c55e',purple:'#a78bfa',yellow:'#fbbf24',
+  muted:'#94a3b8',dim:'#3a4060',bg:'#1a1d27',text:'#e2e8f0'
+};
+
+function show(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  setTimeout(drawAll,50);
+}
+
+function getCtx(id){
+  const c=document.getElementById(id); if(!c)return null;
+  c.width=c.offsetWidth*2; c.height=c.height*2;
+  const x=c.getContext('2d'); x.scale(2,2);
+  return {x,w:c.offsetWidth,h:c.height/2};
+}
+
+function drawBar(id,labels,values,color,opts={}){
+  const ctx=getCtx(id); if(!ctx)return;
+  const {x,w,h}=ctx;
+  const pad={t:20,r:16,b:50,l:54};
+  const fw=w-pad.l-pad.r, fh=h-pad.t-pad.b;
+  const max=opts.max||Math.max(...values)*1.2||1;
+  const steps=5;
+  x.font='10px Segoe UI'; x.textAlign='right';
+  for(let i=0;i<=steps;i++){
+    const v=max/steps*i; const y2=pad.t+fh-fh*(v/max);
+    x.fillStyle='rgba(255,255,255,0.04)'; x.fillRect(pad.l,y2,fw,1);
+    x.fillStyle=C.muted; x.fillText((opts.pct?v.toFixed(1)+'%':v.toFixed(opts.dec||0)),pad.l-6,y2+4);
+  }
+  if(opts.avg!=null){
+    const ay=pad.t+fh-fh*(opts.avg/max);
+    x.setLineDash([5,4]); x.strokeStyle='rgba(251,191,36,0.7)'; x.lineWidth=1.5;
+    x.beginPath(); x.moveTo(pad.l,ay); x.lineTo(pad.l+fw,ay); x.stroke();
+    x.setLineDash([]); x.fillStyle=C.yellow; x.font='9px Segoe UI'; x.textAlign='left';
+    x.fillText('Avg '+opts.avg+'%',pad.l+4,ay-4);
+  }
+  const bw=fw/labels.length*0.58; const gap=fw/labels.length;
+  labels.forEach((lbl,i)=>{
+    const bx=pad.l+gap*i+(gap-bw)/2;
+    const bh=fh*(values[i]/max); const by=pad.t+fh-bh;
+    const col=Array.isArray(color)?color[i]:color;
+    x.fillStyle='rgba(0,0,0,0.3)'; x.beginPath(); x.roundRect(bx+2,by+2,bw,bh,4); x.fill();
+    x.beginPath(); x.roundRect(bx,by,bw,bh,4); x.fillStyle=col; x.fill();
+    x.fillStyle='#fff'; x.font='bold 10px Segoe UI'; x.textAlign='center';
+    x.fillText(opts.pct?(values[i].toFixed(1)+'%'):values[i], bx+bw/2, by-5);
+    x.fillStyle=C.muted; x.font='10px Segoe UI';
+    x.fillText(lbl, bx+bw/2, pad.t+fh+16);
+  });
+}
+
+function drawGroupedBar(id,labels,dataA,dataB,colorA,colorB,labelA,labelB,opts={}){
+  const ctx=getCtx(id); if(!ctx)return;
+  const {x,w,h}=ctx;
+  const pad={t:28,r:16,b:50,l:54};
+  const fw=w-pad.l-pad.r, fh=h-pad.t-pad.b;
+  const max=opts.max||Math.max(...dataA,...dataB)*1.25||1;
+  const steps=5;
+  x.font='10px Segoe UI'; x.textAlign='right';
+  for(let i=0;i<=steps;i++){
+    const v=max/steps*i; const y2=pad.t+fh-fh*(v/max);
+    x.fillStyle='rgba(255,255,255,0.04)'; x.fillRect(pad.l,y2,fw,1);
+    x.fillStyle=C.muted; x.fillText((opts.pct?v.toFixed(1)+'%':v.toFixed(0)),pad.l-6,y2+4);
+  }
+  const groupW=fw/labels.length; const bw=groupW*0.28;
+  labels.forEach((lbl,i)=>{
+    const gx=pad.l+groupW*i;
+    [[dataA[i],colorA,0],[dataB[i],colorB,1]].forEach(([val,col,j])=>{
+      const bx=gx+(groupW-bw*2-4)/2+j*(bw+4);
+      const bh=fh*(val/max); const by=pad.t+fh-bh;
+      x.fillStyle='rgba(0,0,0,0.25)'; x.beginPath(); x.roundRect(bx+1,by+2,bw,bh,3); x.fill();
+      x.beginPath(); x.roundRect(bx,by,bw,bh,3); x.fillStyle=col; x.fill();
+      x.fillStyle='#fff'; x.font='bold 9px Segoe UI'; x.textAlign='center';
+      x.fillText(opts.pct?(val.toFixed(1)+'%'):val, bx+bw/2, by-5);
+    });
+    x.fillStyle=C.muted; x.font='10px Segoe UI'; x.textAlign='center';
+    x.fillText(lbl, gx+groupW/2, pad.t+fh+16);
+  });
+  [[colorA,labelA],[colorB,labelB]].forEach(([col,lbl],i)=>{
+    const lx=pad.l+i*140;
+    x.fillStyle=col; x.beginPath(); x.roundRect(lx,8,12,8,2); x.fill();
+    x.fillStyle=C.muted; x.font='10px Segoe UI'; x.textAlign='left';
+    x.fillText(lbl,lx+16,16);
+  });
+}
+
+function drawMultiGrouped(id,labels,datasets,opts={}){
+  const ctx=getCtx(id); if(!ctx)return;
+  const {x,w,h}=ctx;
+  const pad={t:28,r:16,b:50,l:54};
+  const fw=w-pad.l-pad.r, fh=h-pad.t-pad.b;
+  const allV=datasets.flatMap(d=>d.data);
+  const max=Math.max(...allV)*1.3||1;
+  const steps=5;
+  x.font='10px Segoe UI'; x.textAlign='right';
+  for(let i=0;i<=steps;i++){
+    const v=max/steps*i; const y2=pad.t+fh-fh*(v/max);
+    x.fillStyle='rgba(255,255,255,0.04)'; x.fillRect(pad.l,y2,fw,1);
+    x.fillStyle=C.muted; x.fillText(v.toFixed(opts.dec||0),pad.l-6,y2+4);
+  }
+  const groupW=fw/labels.length;
+  const bw=groupW*0.85/datasets.length;
+  labels.forEach((lbl,i)=>{
+    datasets.forEach((ds,j)=>{
+      const bx=pad.l+groupW*i+(groupW*0.075)+j*(bw+2);
+      const val=ds.data[i]; const bh=fh*(val/max); const by=pad.t+fh-bh;
+      x.fillStyle='rgba(0,0,0,0.2)'; x.beginPath(); x.roundRect(bx+1,by+2,bw,bh,3); x.fill();
+      x.beginPath(); x.roundRect(bx,by,bw,bh,3); x.fillStyle=ds.color; x.fill();
+    });
+    x.fillStyle=C.muted; x.font='10px Segoe UI'; x.textAlign='center';
+    x.fillText(lbl, pad.l+groupW*i+groupW/2, pad.t+fh+16);
+  });
+  datasets.forEach((ds,i)=>{
+    const lx=pad.l+i*150;
+    x.fillStyle=ds.color; x.beginPath(); x.roundRect(lx,8,12,8,2); x.fill();
+    x.fillStyle=C.muted; x.font='10px Segoe UI'; x.textAlign='left';
+    x.fillText(ds.label,lx+16,16);
+  });
+}
+
+function drawLine(id,labels,datasets){
+  const ctx=getCtx(id); if(!ctx)return;
+  const {x,w,h}=ctx;
+  const pad={t:20,r:16,b:50,l:54};
+  const fw=w-pad.l-pad.r, fh=h-pad.t-pad.b;
+  const allV=datasets.flatMap(d=>d.data.filter(v=>v!=null));
+  const max=Math.max(...allV)*1.3||1;
+  const steps=5;
+  x.font='10px Segoe UI'; x.textAlign='right';
+  for(let i=0;i<=steps;i++){
+    const v=max/steps*i; const y2=pad.t+fh-fh*(v/max);
+    x.fillStyle='rgba(255,255,255,0.04)'; x.fillRect(pad.l,y2,fw,1);
+    x.fillStyle=C.muted; x.fillText(v.toFixed(1)+'%',pad.l-6,y2+4);
+  }
+  // prototype go-live line at month 7 (index 6)
+  const gx=pad.l+fw/11*6;
+  x.setLineDash([4,3]); x.strokeStyle='rgba(45,212,191,0.5)'; x.lineWidth=1.5;
+  x.beginPath(); x.moveTo(gx,pad.t); x.lineTo(gx,pad.t+fh); x.stroke();
+  x.setLineDash([]); x.fillStyle=C.teal; x.font='9px Segoe UI'; x.textAlign='left';
+  x.fillText('Prototype live',gx+4,pad.t+14);
+
+  datasets.forEach(ds=>{
+    const pts=labels.map((l,i)=>({
+      px:pad.l+fw/(labels.length-1)*i,
+      py:ds.data[i]!=null ? pad.t+fh-fh*(ds.data[i]/max) : null
+    }));
+    const valid=pts.filter(p=>p.py!=null);
+    if(valid.length<2)return;
+    const g=x.createLinearGradient(0,pad.t,0,pad.t+fh);
+    g.addColorStop(0,ds.color.replace(')',',0.3)').replace('rgb','rgba'));
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    x.beginPath(); x.moveTo(valid[0].px,pad.t+fh);
+    valid.forEach(p=>x.lineTo(p.px,p.py));
+    x.lineTo(valid[valid.length-1].px,pad.t+fh); x.closePath();
+    x.fillStyle=g; x.fill();
+    x.beginPath(); x.moveTo(valid[0].px,valid[0].py);
+    valid.forEach(p=>x.lineTo(p.px,p.py));
+    x.strokeStyle=ds.color; x.lineWidth=2.5; x.lineJoin='round'; x.stroke();
+    valid.forEach(p=>{ x.beginPath(); x.arc(p.px,p.py,4,0,Math.PI*2); x.fillStyle=ds.color; x.fill(); x.fillStyle='#0f1117'; x.beginPath(); x.arc(p.px,p.py,2,0,Math.PI*2); x.fill(); });
+  });
+  x.fillStyle=C.muted; x.font='10px Segoe UI'; x.textAlign='center';
+  labels.forEach((lbl,i)=>{ const px=pad.l+fw/(labels.length-1)*i; x.fillText(lbl,px,pad.t+fh+16); });
+  if(datasets.length>1){
+    datasets.forEach((ds,i)=>{
+      const lx=pad.l+i*160;
+      x.strokeStyle=ds.color; x.lineWidth=2; x.beginPath(); x.moveTo(lx,10); x.lineTo(lx+20,10); x.stroke();
+      x.fillStyle=C.muted; x.font='10px Segoe UI'; x.textAlign='left'; x.fillText(ds.label,lx+24,14);
+    });
+  }
+}
+
+function drawDonut(id,labels,values,colors){
+  const ctx=getCtx(id); if(!ctx)return;
+  const {x,w,h}=ctx;
+  const cx2=w/2,cy2=h/2-10,r=Math.min(w,h)*0.32,inner=r*0.55;
+  const total=values.reduce((a,b)=>a+b,0);
+  let start=-Math.PI/2;
+  values.forEach((v,i)=>{
+    const angle=2*Math.PI*(v/total);
+    x.beginPath(); x.moveTo(cx2,cy2); x.arc(cx2,cy2,r,start,start+angle);
+    x.fillStyle=colors[i]; x.fill();
+    x.beginPath(); x.arc(cx2,cy2,inner,0,2*Math.PI); x.fillStyle=C.bg; x.fill();
+    start+=angle;
+  });
+  x.fillStyle=C.text; x.font='bold 13px Segoe UI'; x.textAlign='center';
+  x.fillText(total,cx2,cy2+5);
+  x.fillStyle=C.muted; x.font='9px Segoe UI'; x.fillText('total',cx2,cy2+18);
+  const legendY=h-labels.length*16-4;
+  labels.forEach((lbl,i)=>{
+    x.fillStyle=colors[i]; x.beginPath(); x.roundRect(8,legendY+i*16,10,10,2); x.fill();
+    x.fillStyle=C.muted; x.font='10px Segoe UI'; x.textAlign='left';
+    x.fillText(`${lbl} (${Math.round(values[i]/total*100)}%)`,22,legendY+i*16+9);
+  });
+}
+
+// DATA
+const hubs=['HUB1','HUB2','HUB3','HUB4','HUB5'];
+const cats=['Camping','Electronics','Household','Sporting','Tools'];
+const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const hubLRRbefore=[21.4,17.1,22.8,20.5,28.4];
+const hubARDbefore=[1.8,1.4,2.0,1.7,2.6];
+const hubDISbefore=[52,38,61,47,110];
+const hubSORbefore=[28,18,32,24,85];
+const catLRRbefore=[31.2,15.8,18.4,21.3,23.1];
+const catARDbefore=[68.4,28.6,34.2,41.8,44.5];
+const catTotal=[480,390,420,370,440];
+const catLate=catLRRbefore.map((r,i)=>Math.round(catTotal[i]*r/100));
+const catOntime=catTotal.map((t,i)=>t-catLate[i]);
+const hubLRRafter=[9.8,7.4,11.2,9.1,12.1];
+const hubDISafter=[18,12,22,16,48];
+const catLRRafter=[13.8,7.2,8.6,9.4,10.8];
+const catARDafter=[22.1,9.4,11.6,14.2,16.8];
+// Normalised for "all 5 KPIs" chart (scale to 0-100 base)
+const kpiLabels=['LRR','RDR','ARD/2','ARDR\n(inv)','SOR\u00D710'];
+const kpiBefore=[23.0,63.7,25.75,0,8.9*10];
+const kpiAfter=[11.4,28.1,9.1,64.9,2.9*10]; // ARDR after = 64.9%
+
+let drawn={};
+function drawAll(){
+  const active=document.querySelector('.section.active')?.id;
+
+  if(active==='overview'&&!drawn.overview){
+    drawBar('c-overview-hub',hubs,hubLRRbefore,
+      hubLRRbefore.map(v=>v>=28?C.red:v>=22?C.orange:C.blue),{pct:true,avg:23.0});
+    drawBar('c-overview-cat',cats,catLRRbefore,
+      catLRRbefore.map(v=>v>=30?C.red:v>=20?C.orange:C.blue),{pct:true});
+    drawn.overview=true;
+  }
+
+  if(active==='hubs'&&!drawn.hubs){
+    drawBar('c-hub-rate',hubs,hubLRRbefore,
+      hubLRRbefore.map(v=>v>=28?C.red:v>=22?C.orange:C.blue),{pct:true,avg:23.0});
+    drawBar('c-hub-days',hubs,hubARDbefore.map(v=>v*24),
+      hubARDbefore.map(v=>v>=2.5?C.red:v>=2.0?C.orange:C.blue),{dec:1});
+    drawMultiGrouped('c-hub-dis',hubs,[
+      {data:hubDISbefore,color:C.blue,label:'KPI 2 — Disruptions (RDR)'},
+      {data:hubSORbefore,color:C.orange,label:'KPI 5 — Staff Overrides (SOR)'}
+    ],{dec:0});
+    drawn.hubs=true;
+  }
+
+  if(active==='categories'&&!drawn.cats){
+    drawBar('c-cat-rate',cats,catLRRbefore,catLRRbefore.map(v=>v>=30?C.red:v>=20?C.orange:C.blue),{pct:true});
+    drawBar('c-cat-delay',cats,catARDbefore,catARDbefore.map(v=>v>=60?C.red:v>=40?C.orange:C.teal),{dec:1});
+    drawGroupedBar('c-cat-dist',cats,catOntime,catLate,C.blue,C.red,'On-Time','Late (LRR)',{});
+    drawn.cats=true;
+  }
+
+  if(active==='disruptions'&&!drawn.dis){
+    drawBar('c-dis-hub',hubs,hubDISbefore,hubDISbefore.map(v=>v>=100?C.red:v>=60?C.orange:C.purple),{});
+    drawDonut('c-dis-sev',['Mild','Moderate','Severe'],[154,100,54],[C.blue,C.orange,C.red]);
+    drawBar('c-dis-month',months,[18,20,24,28,34,48,56,52,38,26,18,16],
+      [18,20,24,28,34,48,56,52,38,26,18,16].map(v=>v>=50?C.red:v>=35?C.orange:C.purple),{});
+    drawn.dis=true;
+  }
+
+  if(active==='reminders'&&!drawn.rem){
+    drawGroupedBar('c-rem-main',['With Reminder','No Reminder'],[22.7],[23.4],C.blue,C.red,
+      'LRR — Reminder Sent','LRR — No Reminder',{pct:true,max:40});
+    drawGroupedBar('c-rem-cat',cats,[30.1,14.8,17.6,20.4,22.1],[32.2,16.9,19.1,22.6,24.0],
+      C.blue,C.red,'LRR — Reminder Sent','LRR — No Reminder',{pct:true});
+    drawGroupedBar('c-rem-hub',hubs,[20.8,16.4,21.9,19.7,27.2],[22.1,17.8,23.7,21.3,29.6],
+      C.blue,C.red,'LRR — Reminder Sent','LRR — No Reminder',{pct:true});
+    drawn.rem=true;
+  }
+
+  if(active==='beforeafter'&&!drawn.ba){
+    drawGroupedBar('c-ba-hub-rate',hubs,hubLRRbefore,hubLRRafter,C.red,C.green,
+      'KPI 1 LRR — Before','KPI 1 LRR — After',{pct:true});
+    drawGroupedBar('c-ba-hub-dis',hubs,hubDISbefore,hubDISafter,C.red,C.green,
+      'KPI 2 RDR — Before','KPI 2 RDR — After',{});
+    drawGroupedBar('c-ba-cat-rate',cats,catLRRbefore,catLRRafter,C.red,C.green,
+      'KPI 1 LRR — Before','KPI 1 LRR — After',{pct:true});
+    drawGroupedBar('c-ba-cat-delay',cats,catARDbefore,catARDafter,C.red,C.green,
+      'KPI 3 ARD — Before','KPI 3 ARD — After',{dec:1});
+    drawGroupedBar('c-ba-overall',
+      ['KPI1\nLRR','KPI2\nRDR','KPI3\nARD/2','KPI5\nSOR\u00D710'],
+      [23.0,63.7,25.75,89],[11.4,28.1,9.1,29],
+      C.red,C.green,'Before Prototype','After Prototype',{dec:1});
+    drawLine('c-ba-trend',months,[{
+      data:[19.2,20.1,21.4,22.8,23.5,26.1,20.4,16.8,14.2,12.9,12.1,11.4],
+      color:C.teal,label:'KPI 1 — LRR Monthly Trend'
+    }]);
+    drawn.ba=true;
+  }
+}
+
+window.addEventListener('load',()=>setTimeout(drawAll,100));
+window.addEventListener('resize',()=>{drawn={};drawAll();});
+</script>
+</body>
+</html>
